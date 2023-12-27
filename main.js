@@ -3,6 +3,10 @@ let MAX_MESSAGES_TO_SHOW = 6
 let ANIMATION_DURATION = 0.25
 let IGNORED_USERNAMES = []
 
+function htmlEncode(str) {
+  return str.replace(/[<>"^]/g, (e) => `&#${e.charCodeAt(0)};`)
+}
+
 function buildUsernameBadge(data) {
   let usernameText = ''
 
@@ -15,8 +19,9 @@ function buildUsernameBadge(data) {
 
 function buildMessageWithEmotes(data) {
   return data.emotes.reduce((text, emote) => {
+    emote.name = htmlEncode(emote.name)
     return text.replace(emote.name, `<img alt="${emote.name}" src="${emote.urls['4']}" />`)
-  }, data.text)
+  }, htmlEncode(data.text))
 }
 
 function doMessage(event) {
