@@ -11,7 +11,7 @@ function buildUsernameBadge(data) {
   let usernameText = ''
 
   for (const badge of data.badges) {
-    usernameText += `<img alt="${badge.description}" src="${badge.url}" />`
+    usernameText += `<img src="${badge.url}" />`
   }
 
   return usernameText + data.displayName
@@ -19,8 +19,7 @@ function buildUsernameBadge(data) {
 
 function buildMessageWithEmotes(data) {
   return data.emotes.reduce((text, emote) => {
-    emote.name = htmlEncode(emote.name)
-    return text.replace(emote.name, `<img alt="${emote.name}" src="${emote.urls['4']}" />`)
+    return text.replaceAll(emote.name, `<img src="${emote.urls['4']}" />`)
   }, htmlEncode(data.text))
 }
 
@@ -158,9 +157,7 @@ window.addEventListener('onEventReceived', function (obj) {
               ]
               defaultEventBody.detail.event.data.text = data[0]
               defaultEventBody.detail.event.renderedText = data[0]
-              let emulated = new CustomEvent('onEventReceived', defaultEventBody)
-
-              window.dispatchEvent(emulated)
+              window.dispatchEvent(new CustomEvent('onEventReceived', defaultEventBody))
             })
         } else if (obj.detail.event.field === 'testMessageRaw') {
           defaultEventBody.detail.event.data.badges = [
@@ -179,8 +176,7 @@ window.addEventListener('onEventReceived', function (obj) {
           ]
           defaultEventBody.detail.event.data.text = 'Just a test'
           defaultEventBody.detail.event.renderedText = 'Just a test'
-          let emulated = new CustomEvent('onEventReceived', defaultEventBody)
-          window.dispatchEvent(emulated)
+          window.dispatchEvent(new CustomEvent('onEventReceived', defaultEventBody))
         }
         break
     }
