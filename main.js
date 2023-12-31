@@ -9,12 +9,11 @@ function htmlEncode(str) {
 
 function buildUsernameBadge(data) {
   let usernameText = ''
-
   for (const badge of data.badges) {
     usernameText += `<img src="${badge.url}" />`
   }
 
-  return usernameText + data.displayName
+  return `${usernameText} ${data.displayName}`
 }
 
 function buildMessageWithEmotes(data) {
@@ -23,37 +22,28 @@ function buildMessageWithEmotes(data) {
   }, htmlEncode(data.text))
 }
 
-function doMessage(event) {
+function onMessage(event) {
   const data = event.data
   const messageId = data.msgId
-  const usernameData = buildUsernameBadge(data)
 
   if (IGNORED_USERNAMES.includes(data.nick) || data.text.startsWith('!')) {
     return
   }
 
-  const mainContainer = document.querySelector('.main-container > .outer-wrapper')
+  const mainContainer = $('.main-container > .outer-wrapper')
   if (mainContainer != null) {
-    const container = document.createElement('div')
-    container.setAttribute('data-msgId', messageId)
-    container.setAttribute('data-userId', data.userId)
-    container.classList.add('messageBox--container')
-
-    const username = document.createElement('div')
-    username.classList.add('messageBox--username')
-    username.style.color = data.displayColor
-    username.innerHTML = usernameData
-    container.appendChild(username)
-
-    const message = document.createElement('div')
-    message.classList.add('messageBox--message')
-    message.innerHTML = buildMessageWithEmotes(data)
-    container.appendChild(message)
-
-    mainContainer.appendChild(container)
+    const usernameText = buildUsernameBadge(data)
+    const messageText = buildMessageWithEmotes(data)
+    const messageBox = $.parseHTML(`
+      <div class="messageBox--container" data-msgId="${messageId}" data-userId="${data.userId}">
+        <div class="messageBox--username" style="color:${data.displayColor}">${usernameText}</div>
+        <div class="messageBox--message">${messageText}</div>
+      </div>
+    `)
+    mainContainer.append(messageBox)
 
     const removeMessages = () => {
-      const children = Array.from(mainContainer.children).reverse()
+      const children = mainContainer.children().toArray().reverse()
       for (let i = 0; i < children.length; i++) {
         const child = children[i]
         const childRect = child.getBoundingClientRect()
@@ -76,25 +66,77 @@ function doMessage(event) {
 
 // ================================================================================================================== \\
 
-function doDeleteMessage(event) {
-  const message = document.querySelector(`div[data-msgId="${event.msgId}"]`)
+function dispatchDebugMessage(event) {
+  const defaultEventBody = {
+    detail: {
+      listener: 'message',
+      event: {
+        service: 'twitch',
+        data: {
+          nick: CHANNEL.username,
+          userId: CHANNEL.providerId,
+          displayName: CHANNEL.username,
+          displayColor: '#B22222',
+          badges: [],
+          text: '',
+          emotes: [],
+          msgId: Date.now()
+        },
+        renderedText: ''
+      }
+    }
+  }
 
-  if (message != null) {
-    message.remove()
+  if (event.field === 'testMessage') {
+    fetch('https://baconipsum.com/api/?type=all-meat&paras=1')
+      .then((data) => data.json())
+      .then((data) => {
+        defaultEventBody.detail.event.data.badges = [
+          {
+            type: 'subscriber',
+            version: '1',
+            url: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3',
+            description: 'Subscriber'
+          },
+          {
+            type: 'turbo',
+            version: '1',
+            url: 'https://static-cdn.jtvnw.net/badges/v1/bd444ec6-8f34-4bf9-91f4-af1e3428d80f/3',
+            description: 'Turbo'
+          },
+          {
+            type: 'vip',
+            version: '1',
+            url: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3',
+            description: 'VIP'
+          }
+        ]
+        defaultEventBody.detail.event.data.text = data[0]
+        defaultEventBody.detail.event.renderedText = data[0]
+        window.dispatchEvent(new CustomEvent('onEventReceived', defaultEventBody))
+      })
+  } else if (event.field === 'testMessageRaw') {
+    defaultEventBody.detail.event.data.badges = [
+      {
+        type: 'broadcaster',
+        version: '1',
+        url: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3',
+        description: 'Broadcaster'
+      },
+      {
+        type: 'turbo',
+        version: '1',
+        url: 'https://static-cdn.jtvnw.net/badges/v1/bd444ec6-8f34-4bf9-91f4-af1e3428d80f/3',
+        description: 'Turbo'
+      }
+    ]
+    defaultEventBody.detail.event.data.text = 'Just a test'
+    defaultEventBody.detail.event.renderedText = 'Just a test'
+    window.dispatchEvent(new CustomEvent('onEventReceived', defaultEventBody))
   }
 }
 
 // ================================================================================================================== \\
-
-function doDeleteMessages(event) {
-  const messages = document.querySelectorAll(`div[data-userId="${event.userId}"]`)
-
-  if (messages != null && messages.length > 0) {
-    for (const message of messages) {
-      message.remove()
-    }
-  }
-}
 
 window.addEventListener('onWidgetLoad', function (obj) {
   MAX_MESSAGES_TO_SHOW = obj.detail.fieldData.maxMessagesToShow ?? 6
@@ -104,93 +146,22 @@ window.addEventListener('onWidgetLoad', function (obj) {
 })
 
 window.addEventListener('onEventReceived', function (obj) {
-  const event = obj.detail.event
-  const detailListener = obj.detail.listener
-
-  if (detailListener == 'event:test') {
-    const eventListener = event.listener
-    switch (eventListener) {
-      case 'widget-button':
-        const defaultEventBody = {
-          detail: {
-            listener: 'message',
-            event: {
-              service: 'twitch',
-              data: {
-                nick: CHANNEL.username,
-                userId: CHANNEL.providerId,
-                displayName: CHANNEL.username,
-                displayColor: '#B22222',
-                badges: [],
-                text: '',
-                emotes: [],
-                msgId: Date.now()
-              },
-              renderedText: ''
-            }
-          }
-        }
-
-        if (obj.detail.event.field === 'testMessage') {
-          fetch('https://baconipsum.com/api/?type=all-meat&paras=1')
-            .then((data) => data.json())
-            .then((data) => {
-              defaultEventBody.detail.event.data.badges = [
-                {
-                  type: 'subscriber',
-                  version: '1',
-                  url: 'https://static-cdn.jtvnw.net/badges/v1/5d9f2208-5dd8-11e7-8513-2ff4adfae661/3',
-                  description: 'Subscriber'
-                },
-                {
-                  type: 'turbo',
-                  version: '1',
-                  url: 'https://static-cdn.jtvnw.net/badges/v1/bd444ec6-8f34-4bf9-91f4-af1e3428d80f/3',
-                  description: 'Turbo'
-                },
-                {
-                  type: 'vip',
-                  version: '1',
-                  url: 'https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/3',
-                  description: 'VIP'
-                }
-              ]
-              defaultEventBody.detail.event.data.text = data[0]
-              defaultEventBody.detail.event.renderedText = data[0]
-              window.dispatchEvent(new CustomEvent('onEventReceived', defaultEventBody))
-            })
-        } else if (obj.detail.event.field === 'testMessageRaw') {
-          defaultEventBody.detail.event.data.badges = [
-            {
-              type: 'broadcaster',
-              version: '1',
-              url: 'https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/3',
-              description: 'Broadcaster'
-            },
-            {
-              type: 'turbo',
-              version: '1',
-              url: 'https://static-cdn.jtvnw.net/badges/v1/bd444ec6-8f34-4bf9-91f4-af1e3428d80f/3',
-              description: 'Turbo'
-            }
-          ]
-          defaultEventBody.detail.event.data.text = 'Just a test'
-          defaultEventBody.detail.event.renderedText = 'Just a test'
-          window.dispatchEvent(new CustomEvent('onEventReceived', defaultEventBody))
-        }
-        break
-    }
-  } else {
-    switch (detailListener) {
-      case 'message':
-        doMessage(obj.detail.event)
-        break
-      case 'delete-message':
-        doDeleteMessage(obj.detail.event)
-        break
-      case 'delete-messages':
-        doDeleteMessages(obj.detail.event)
-        break
-    }
+  switch (obj.detail.listener) {
+    case 'message':
+      onMessage(obj.detail.event)
+      break
+    case 'delete-message':
+      $(`div[data-msgId="${obj.detail.event.msgId}"]`).remove()
+      break
+    case 'delete-messages':
+      $(`div[data-userId="${obj.detail.event.userId}"]`).remove()
+      break
+    case 'event:test':
+      switch (obj.detail.event.listener) {
+        case 'widget-button':
+          dispatchDebugMessage(obj.detail.event)
+          break
+      }
+      break
   }
 })
