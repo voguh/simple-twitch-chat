@@ -1,0 +1,73 @@
+{
+  "chatboxBackgroundColor": {
+    "group": "Global",
+    "label": "Background color",
+    "type": "colorpicker",
+    "value": "#2F2F2F"
+  },
+  "referenceFontSize": {
+    "group": "Global",
+    "label": "Reference font size",
+    "type": "number",
+    "min": 16,
+    "value": 16
+  },
+  "ignoredUsernames": {
+    "group": "Global",
+    "type": "text",
+    "label": "Ignored usernames (',' to separate)",
+    "value": "streamelements,nightbot,streamlabs"
+  },
+  "ignoreCommands": {
+    "group": "Global",
+    "type": "checkbox",
+    "label": "Ignore commands",
+    "value": true
+  },
+  "maxMessagesToShow": {
+    "group": "Global",
+    "type": "number",
+    "label": "Max messages to show",
+    "min": 1,
+    "value": 7
+  },
+  "animationDurationLabel": {
+    "group": "Global",
+    "label": "Animation time (s)",
+    "type": "hidden"
+  },
+  "animationDuration": {
+    "group": "Global",
+    "type": "number",
+    "label": "(Pop in/out animation duration)",
+    "value": 0.25
+  },
+  "usernameBackgroundColor": {
+    "group": "Username",
+    "label": "Background color",
+    "type": "colorpicker",
+    "value": "#202020"
+  },
+  "messageBackgroundColor": {
+    "group": "Message",
+    "label": "Background color",
+    "type": "colorpicker",
+    "value": "#FFFFFF"
+  },
+  "messageTextColor": {
+    "group": "Message",
+    "label": "Text color",
+    "type": "colorpicker",
+    "value": "#000000"
+  },
+  "testMessage": {
+    "group": "Other",
+    "type": "button",
+    "label": "Test message (Random)"
+  },
+  "testMessageRaw": {
+    "group": "Other",
+    "type": "button",
+    "label": "Test message (Just a test)"
+  }
+}
